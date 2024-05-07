@@ -13,7 +13,7 @@ import torch
 import os
 import torch.nn as nn
 import argparse
-from data_structure import UnionFind
+from .data_structure import UnionFind
 
 
 def gather_infos(infos):

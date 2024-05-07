@@ -26,9 +26,8 @@ def ann_loader(fpath):
             image_path, *others = line.strip().split('\t')
             image_paths.append(image_path)
             others = '\t'.join(others)
-            if len(others) != 0:
-                other_infos.append(others)
-    assert len(other_infos) is 0 or len(other_infos) == len(
+            other_infos.append(others)
+    assert len(other_infos) == 0 or len(other_infos) == len(
         image_paths), f"Error in {fpath}, where len(image_paths)={len(image_paths)}, len(other_infos)={len(other_infos)}"
     return image_paths, other_infos
 

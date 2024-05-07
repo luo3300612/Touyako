@@ -9,7 +9,6 @@ from tqdm import tqdm
 import time
 import random
 import imagehash
-from mp_tools import ParallelElements
 import argparse
 import pickle as pkl
 from collections import defaultdict
@@ -20,6 +19,7 @@ from pathlib import Path
 from touyako.image_dedup_tools import *
 from touyako.file_utils import txt_loader, get_image_paths_under_folder, valid_image_exts, ann_loader
 from touyako.image_utils import get_phash, get_md5
+from touyako.mp_tools import ParallelElements
 
 
 # 验证image_paths.txt文件，输出一个去重后的image_paths.txt
@@ -88,13 +88,15 @@ if __name__ == '__main__':
     parser.add_argument('--rename_image', action='store_true', default=False, help='rename image to its md5')
     parser.add_argument('--label', type=str, default='', help='rename image to its md5')
     parser.add_argument('--save_here', action='store_true', default='', help='save near input')
+    parser.add_argument('--debug', action='store_true', default='', help='save near input')
     args = parser.parse_args()
     print('check file')
 
     setattr(args, 'input', os.path.abspath(args.input))
     if args.save_here:
         parent = Path(args.input).parent
-        output_path = opj(str(parent), 'image_paths_dedup.txt')
+        basename = os.path.basename(args.input).split('.')[0]
+        output_path = opj(str(parent), f'{basename}_dedup.txt')
         setattr(args, 'output', output_path)
         print('output path')
         print(output_path)
@@ -110,6 +112,11 @@ if __name__ == '__main__':
     else:
         raise NotImplementedError(f'Only support folder and txt. Not support for {args.input}')
 
+    if args.debug:
+        print('Debug mode On')
+        image_paths = image_paths[:5]
+        other_infos = other_infos[:5]
+
     print('Hashing...')
     pool = ParallelElements(args.n_pools)
     res = pool.run(get_image_info, image_paths)  # [(md5, phash)]
@@ -120,8 +127,8 @@ if __name__ == '__main__':
     for image_path, other_info, (md5, phash, (h, w)) in zip(image_paths, other_infos, res):
         if args.label != '':
             label = args.label
-        elif len(other_infos) != '':
-            label = other_infos
+        elif len(other_info) != '':
+            label = other_info
         else:
             label = ''
         info = {
@@ -133,6 +140,8 @@ if __name__ == '__main__':
         }
         infos.append(info)
 
+    print(len(infos))
+
     infos = image_path_dedup(infos)
     infos_bad_removed, trace_bad = remove_bad_images(infos)
     infos_md5_deduped, trace_md5 = md5_dedup(infos_bad_removed)
@@ -140,6 +149,7 @@ if __name__ == '__main__':
     trace = {'bad': trace_bad, 'md5': trace_md5, 'phash': trace_phash}
 
     # format output
+    print('format output')
     pe = ParallelElements(args.n_pools)
     out_infos = pe.run(format_output, infos_final)
 
