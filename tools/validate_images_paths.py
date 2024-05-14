@@ -1,4 +1,5 @@
 import hashlib
+import json
 import os
 import os.path
 from os.path import join as opj
@@ -89,6 +90,8 @@ if __name__ == '__main__':
     parser.add_argument('--label', type=str, default='', help='rename image to its md5')
     parser.add_argument('--save_here', action='store_true', default='', help='save near input')
     parser.add_argument('--debug', action='store_true', default='', help='save near input')
+    parser.add_argument('--only_bad', action='store_true', default='', help='only rm bad images')
+    parser.add_argument('--output_trace', type=str, default='', help='output path of dedup trace')
     args = parser.parse_args()
     print('check file')
 
@@ -144,9 +147,14 @@ if __name__ == '__main__':
 
     infos = image_path_dedup(infos)
     infos_bad_removed, trace_bad = remove_bad_images(infos)
-    infos_md5_deduped, trace_md5 = md5_dedup(infos_bad_removed)
-    infos_final, trace_phash = phash_dedup(infos_md5_deduped, args.phash_thresh)
-    trace = {'bad': trace_bad, 'md5': trace_md5, 'phash': trace_phash}
+
+    if args.only_bad:
+        infos_final = infos_bad_removed
+        trace = {'bad': trace_bad}
+    else:
+        infos_md5_deduped, trace_md5 = md5_dedup(infos_bad_removed)
+        infos_final, trace_phash = phash_dedup(infos_md5_deduped, args.phash_thresh)
+        trace = {'bad': trace_bad, 'md5': trace_md5, 'phash': trace_phash}
 
     # format output
     print('format output')
@@ -161,3 +169,7 @@ if __name__ == '__main__':
         f.writelines(out_infos)
     print(args.output)
     print('Done')
+
+    if args.output_trace != '':
+        json.dump(trace, args.output_trace)
+        print(f'trace dump to {args.output_trace}')
