@@ -171,5 +171,5 @@ if __name__ == '__main__':
     print('Done')
 
     if args.output_trace != '':
-        json.dump(trace, args.output_trace)
+        json.dump(trace, open(args.output_trace,'w'))
         print(f'trace dump to {args.output_trace}')
